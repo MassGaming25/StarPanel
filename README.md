@@ -1,94 +1,87 @@
-# SC Companion — Star Citizen Desktop App
+# StarPanel — Star Citizen Companion App
 
-A native PyQt6 desktop app for Fedora Linux.
-Ships, commodities with best buy/sell locations, trade routes, and fleet manager.
-
----
-
-## Quickest way to run (no Flatpak needed)
-
-Install PyQt6 and run directly:
-
-```bash
-sudo dnf install python3-pyqt6
-cd sc-companion-flatpak
-python3 src/main.py
-```
-
-That's it. Your fleet data is saved to `~/.local/share/sc-companion/fleet.json`.
+A native Linux desktop companion for Star Citizen.
+Ships, commodity prices, trade routes, fleet manager, and Captain's Log.
 
 ---
 
-## Run as Flatpak (proper desktop integration)
-
-### 1. Install Flatpak tools
+## Install (from a release)
 
 ```bash
-sudo dnf install flatpak flatpak-builder
-flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-flatpak install flathub org.freedesktop.Platform//23.08 org.freedesktop.Sdk//23.08
+# Download latest release
+wget https://github.com/YOUR-USERNAME/starpanel/releases/latest/download/starpanel-VERSION.tar.gz
+
+# Extract
+tar -xzf starpanel-VERSION.tar.gz
+cd starpanel-VERSION
+
+# Install
+./install.sh
 ```
 
-### 2. Install PyQt6 into the Flatpak build
+The installer will:
+- Install PyQt6 and dependencies if missing
+- Copy the app to `~/.local/share/starpanel/`
+- Create a `starpanel` launcher in `~/.local/bin/`
+- Install a `.desktop` shortcut so StarPanel appears in your app menu
+
+---
+
+## Run
 
 ```bash
-pip3 install flatpak-pip-generator
-flatpak-pip-generator PyQt6 --output flatpak/pyqt6-deps
-```
-
-### 3. Build and install
-
-```bash
-cd flatpak
-flatpak-builder --user --install --force-clean build-dir io.github.sccompanion.yml
-```
-
-### 4. Run
-
-```bash
-flatpak run io.github.sccompanion
-```
-
-Or find **SC Companion** in your GNOME app grid.
-
-### Uninstall
-
-```bash
-flatpak uninstall io.github.sccompanion
+starpanel
+# or find StarPanel in your GNOME app grid
 ```
 
 ---
 
-## Project structure
+## Setting up your own GitHub repo
 
+1. Create a repo named `starpanel` on GitHub
+2. Edit `src/core/version.py` and set your GitHub username:
+   ```python
+   GITHUB_OWNER = "your-github-username"
+   ```
+3. Push the code:
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial release"
+   git remote add origin https://github.com/YOUR-USERNAME/starpanel.git
+   git push -u origin main
+   ```
+
+## Publishing a release
+
+```bash
+# Bump version in src/core/version.py first, then:
+git add src/core/version.py CHANGELOG.md
+git commit -m "Release v1.1.0"
+git tag v1.1.0
+git push origin main --tags
 ```
-sc-companion-flatpak/
-├── src/
-│   ├── main.py                  ← Entry point
-│   ├── ui/
-│   │   ├── mainwindow.py        ← Main window
-│   │   ├── overview_tab.py      ← Dashboard
-│   │   ├── ships_tab.py         ← Ship browser
-│   │   ├── commodities_tab.py   ← Market + trade routes
-│   │   ├── fleet_tab.py         ← Fleet manager
-│   │   └── theme.py             ← Dark stylesheet
-│   └── core/
-│       ├── data.py              ← Ships, commodities, locations
-│       └── fleet.py             ← Fleet persistence
-├── flatpak/
-│   └── io.github.sccompanion.yml  ← Flatpak manifest
-├── io.github.sccompanion.desktop
-└── io.github.sccompanion.metainfo.xml
-```
+
+The GitHub Actions workflow (`.github/workflows/release.yml`) will automatically:
+- Build the release zip and tar.gz
+- Create a GitHub Release with the files attached
+- Users running StarPanel will see an update notification on next startup
 
 ---
 
-## Features
+## Data sources
 
-- **Overview** — Fleet summary and top trade routes at a glance
-- **Ships** — Browse all ships, filter by manufacturer/role/size/status, click for detail
-- **Commodities**
-  - *Market Overview* — Best buy/sell price per commodity with profit per SCU
-  - *Best Locations* — Single best place to buy and sell each item
-  - *Trade Routes* — All routes ranked by profit, filterable and sortable
-- **Fleet** — Add/edit/remove ships, track status, insurance, loadout notes
+| Data | Source | Fallback |
+|------|--------|---------|
+| Ships | Fleetyards API | RSI Ship Matrix |
+| Commodities | UEX Corp API | Static data |
+| Prices | UEX Corp API | Static data |
+| Locations | UEX Corp API | Static data |
+
+---
+
+## Requirements
+
+- Fedora / Linux
+- Python 3.10+
+- PyQt6 (`sudo dnf install python3-pyqt6`)

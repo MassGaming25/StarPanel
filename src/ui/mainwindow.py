@@ -9,14 +9,17 @@ from ui.ships_tab import ShipsTab
 from ui.commodities_tab import CommoditiesTab
 from ui.fleet_tab import FleetTab
 from ui.log_tab import LogTab
+from ui.update_dialog import UpdateDialog
 from core.uex import ApiWorker
+from core.updater import UpdateChecker
+from core.version import APP_VERSION
 import core.data as data
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("StarPanel")
+        self.setWindowTitle(f"StarPanel  v{APP_VERSION}")
         self.setMinimumSize(1100, 700)
         self.resize(1280, 800)
         self.setStyleSheet(DARK_PALETTE)
@@ -38,7 +41,6 @@ class MainWindow(QMainWindow):
         self._tabs.addTab(self._log,         "  Captain's Log  ")
         self.setCentralWidget(self._tabs)
 
-        # Fleet changes → overview refresh
         self._fleet.fleet_changed.connect(self._overview.refresh)
 
         # ── Status bar ─────────────────────────────────────────────
@@ -75,6 +77,10 @@ class MainWindow(QMainWindow):
         self._worker = None
         self._start_fetch()
 
+        # ── Update check (slight delay so UI is fully up first) ────
+        QTimer.singleShot(3000, self._start_update_check)
+
+    # ── API worker ─────────────────────────────────────────────────
     def _start_fetch(self):
         if self._worker and self._worker.isRunning():
             return
@@ -129,6 +135,22 @@ class MainWindow(QMainWindow):
             self._source_badge.setStyleSheet(
                 "color:#f0a800; font-family:monospace; font-size:11px; padding:0 8px")
 
+    # ── Update checker ─────────────────────────────────────────────
+    def _start_update_check(self):
+        self._update_checker = UpdateChecker()
+        self._update_checker.update_available.connect(self._on_update_available)
+        self._update_checker.up_to_date.connect(
+            lambda: print("[Updater] Up to date."))
+        self._update_checker.check_failed.connect(
+            lambda e: print(f"[Updater] Check failed: {e}"))
+        self._update_checker.start()
+
+    def _on_update_available(self, version: str, url: str, notes: str, asset_url: str):
+        print(f"[Updater] New version available: {version}")
+        dlg = UpdateDialog(version, url, notes, asset_url, self)
+        dlg.exec()
+
+    # ── Clock ──────────────────────────────────────────────────────
     def _tick(self):
         from datetime import datetime, timezone
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d  %H:%M:%S UTC")
