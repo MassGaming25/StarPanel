@@ -12,6 +12,7 @@ from ui.log_tab import LogTab
 from ui.update_dialog import UpdateDialog
 from core.uex import ApiWorker
 from core.updater import UpdateChecker
+from core.sc_version import SCVersionChecker
 from core.version import APP_VERSION
 import core.data as data
 
@@ -77,8 +78,20 @@ class MainWindow(QMainWindow):
         self._worker = None
         self._start_fetch()
 
-        # ── Update check (slight delay so UI is fully up first) ────
+        # ── Update check + SC version check ───────────────────────
         QTimer.singleShot(3000, self._start_update_check)
+        QTimer.singleShot(2000, self._start_sc_version_check)
+
+    def _start_sc_version_check(self):
+        self._sc_checker = SCVersionChecker()
+        self._sc_checker.versions_ready.connect(self._on_sc_versions)
+        self._sc_checker.check_failed.connect(
+            lambda e: print(f"[SCVersion] {e}"))
+        self._sc_checker.start()
+
+    def _on_sc_versions(self, versions: dict):
+        print(f"[SCVersion] {versions}")
+        self._overview.update_sc_versions(versions)
 
     # ── API worker ─────────────────────────────────────────────────
     def _start_fetch(self):
