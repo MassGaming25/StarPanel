@@ -60,12 +60,21 @@ LAUNCHER
 chmod +x "$BIN_DIR/starpanel"
 echo "  [OK]   Launcher: $BIN_DIR/starpanel"
 
-# ── Install icon ──────────────────────────────────────────────────
-mkdir -p "$ICON_DIR"
-if [ -f "$SCRIPT_DIR/assets/starpanel.png" ]; then
-    cp "$SCRIPT_DIR/assets/starpanel.png" "$ICON_DIR/starpanel.png"
-    echo "  [OK]   Icon installed"
+# ── Install icons ─────────────────────────────────────────────────
+for SIZE in 64 128 256; do
+    ICON_DIR="$HOME/.local/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+    mkdir -p "$ICON_DIR"
+    SRC="$SCRIPT_DIR/assets/starpanel_${SIZE}.png"
+    [ -f "$SRC" ] || SRC="$SCRIPT_DIR/assets/starpanel.png"
+    if [ -f "$SRC" ]; then
+        cp "$SRC" "$ICON_DIR/starpanel.png"
+    fi
+done
+# Refresh icon cache
+if command -v gtk-update-icon-cache &>/dev/null; then
+    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
 fi
+echo "  [OK]   Icons installed"
 
 # ── Install .desktop file ─────────────────────────────────────────
 mkdir -p "$DESKTOP_DIR"
