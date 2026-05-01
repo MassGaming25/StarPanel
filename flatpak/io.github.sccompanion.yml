@@ -1,0 +1,47 @@
+app-id: io.github.sccompanion
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: sc-companion
+
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --filesystem=xdg-data/sc-companion:create
+
+modules:
+  # PyQt6 and Python deps via pip
+  - name: python3-pyqt6
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-index --find-links=. PyQt6 PyQt6-Qt6 PyQt6-sip
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/py3/P/PyQt6/PyQt6-6.7.1-cp38-abi3-manylinux_2_28_x86_64.whl
+        sha256: placeholder-run-flatpak-pip-generator
+
+  # The app itself
+  - name: sc-companion
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 sc-companion.sh /app/bin/sc-companion
+      - install -d /app/share/sc-companion/src/ui
+      - install -d /app/share/sc-companion/src/core
+      - install -Dm644 src/main.py              /app/share/sc-companion/src/main.py
+      - install -Dm644 src/ui/__init__.py        /app/share/sc-companion/src/ui/__init__.py
+      - install -Dm644 src/ui/theme.py           /app/share/sc-companion/src/ui/theme.py
+      - install -Dm644 src/ui/mainwindow.py      /app/share/sc-companion/src/ui/mainwindow.py
+      - install -Dm644 src/ui/overview_tab.py    /app/share/sc-companion/src/ui/overview_tab.py
+      - install -Dm644 src/ui/ships_tab.py       /app/share/sc-companion/src/ui/ships_tab.py
+      - install -Dm644 src/ui/commodities_tab.py /app/share/sc-companion/src/ui/commodities_tab.py
+      - install -Dm644 src/ui/fleet_tab.py       /app/share/sc-companion/src/ui/fleet_tab.py
+      - install -Dm644 src/core/__init__.py       /app/share/sc-companion/src/core/__init__.py
+      - install -Dm644 src/core/data.py           /app/share/sc-companion/src/core/data.py
+      - install -Dm644 src/core/fleet.py          /app/share/sc-companion/src/core/fleet.py
+      - install -Dm644 io.github.sccompanion.desktop /app/share/applications/io.github.sccompanion.desktop
+      - install -Dm644 io.github.sccompanion.metainfo.xml /app/share/metainfo/io.github.sccompanion.metainfo.xml
+    sources:
+      - type: dir
+        path: ..
