@@ -81,14 +81,25 @@ class UpdateChecker(QThread):
                 return
 
             if latest > current:
-                # Find the zip asset URL from the release assets list
+                # 1. Look for an explicitly uploaded .zip asset
                 asset_url = ""
-                for asset in data.get("assets", []):
+                assets = data.get("assets", [])
+                print(f"[Updater] Release assets: {[a.get('name') for a in assets]}")
+                for asset in assets:
                     name = asset.get("name", "")
                     if name.endswith(".zip"):
                         asset_url = asset.get("browser_download_url", "")
+                        print(f"[Updater] Found zip asset: {asset_url}")
                         break
-                print(f"[Updater] Update available: {tag}  asset={asset_url!r}")
+
+                # 2. Fall back to GitHub's auto-generated source zip
+                if not asset_url:
+                    asset_url = data.get("zipball_url", "")
+                    if asset_url:
+                        print(f"[Updater] Using source zipball: {asset_url}")
+                    else:
+                        print("[Updater] No zip found at all — will open release page")
+
                 self.update_available.emit(
                     tag.lstrip("vV"), html_url, body, asset_url)
             else:
@@ -141,13 +152,13 @@ class AppUpdater(QThread):
             tmp_dir = tempfile.mkdtemp(prefix="starpanel_update_")
 
             with zipfile.ZipFile(tmp_zip, "r") as zf:
-                # List all members — find the src/ folder inside the zip
                 members = zf.namelist()
-                src_members = [m for m in members if "/src/" in m or m.startswith("src/")]
-                print(f"[Updater] src/ members in zip: {len(src_members)}")
+                print(f"[Updater] Zip top-level entries: {members[:6]}")
                 zf.extractall(tmp_dir)
 
-            # Find extracted src/ directory (may be nested under a version folder)
+            # Find extracted src/ directory — works for both:
+            #   - Our release zip:   src/main.py
+            #   - GitHub source zip: StarPanel-abc123/src/main.py
             extracted_src = None
             for root, dirs, files in os.walk(tmp_dir):
                 if os.path.basename(root) == "src" and "main.py" in files:

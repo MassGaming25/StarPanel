@@ -94,11 +94,13 @@ class UpdateDialog(QDialog):
 
         self._update_btn = QPushButton("⬇  Update Now")
         self._update_btn.setObjectName("primary")
-        self._update_btn.clicked.connect(self._start_update)
-
-        # Only show "Update Now" if we have a direct download URL
-        if not self._asset_url:
-            self._update_btn.setVisible(False)
+        if self._asset_url:
+            self._update_btn.clicked.connect(self._start_update)
+        else:
+            # No zip asset attached — send user to release page
+            self._update_btn.clicked.connect(self._open_browser)
+            self._update_btn.setToolTip(
+                "No automatic download available — opens the release page")
 
         btn_row.addWidget(self._skip_btn)
         btn_row.addWidget(self._browser_btn)
