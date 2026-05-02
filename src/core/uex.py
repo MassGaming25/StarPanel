@@ -1,5 +1,5 @@
 """
-SC Companion API client.
+StarPanel API client.
 
 Ship data sources (in priority order):
   1. Fleetyards API     — api.fleetyards.net/v1/models  (no key, paginated)
@@ -32,7 +32,7 @@ def _get(url: str) -> tuple[any, str]:
     try:
         req = urllib.request.Request(
             url,
-            headers={"User-Agent": "SC-Companion/1.0", "Accept": "application/json"}
+            headers={"User-Agent": "StarPanel/1.0", "Accept": "application/json"}
         )
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             return json.loads(resp.read().decode()), ""
@@ -51,7 +51,7 @@ def _post(url: str, payload: dict) -> tuple[any, str]:
         req  = urllib.request.Request(
             url, data=body,
             headers={
-                "User-Agent":   "SC-Companion/1.0",
+                "User-Agent":   "StarPanel/1.0",
                 "Accept":       "application/json",
                 "Content-Type": "application/json",
             }

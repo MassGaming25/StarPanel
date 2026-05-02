@@ -1,32 +1,25 @@
-"""Fleet persistence — saves to XDG_DATA_HOME for Flatpak compatibility."""
+"""Fleet persistence."""
 
 import json
-import os
-from pathlib import Path
+from core.storage import data_file
 
 
-def _fleet_path() -> Path:
-    data_home = os.environ.get(
-        "XDG_DATA_HOME",
-        os.path.join(os.path.expanduser("~"), ".local", "share")
-    )
-    app_dir = Path(data_home) / "starpanel"
-    app_dir.mkdir(parents=True, exist_ok=True)
-    return app_dir / "fleet.json"
+def _path():
+    return data_file("fleet.json")
 
 
 def load_fleet() -> list:
-    path = _fleet_path()
-    if path.exists():
+    p = _path()
+    if p.exists():
         try:
-            return json.loads(path.read_text())
+            return json.loads(p.read_text())
         except Exception:
             return []
     return []
 
 
 def save_fleet(fleet: list):
-    _fleet_path().write_text(json.dumps(fleet, indent=2))
+    _path().write_text(json.dumps(fleet, indent=2))
 
 
 def add_ship(entry: dict) -> dict:

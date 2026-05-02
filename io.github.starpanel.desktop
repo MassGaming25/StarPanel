@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=StarPanel
+GenericName=Star Citizen Companion
+Comment=Ship database, commodities, trade routes and Captain's Log for Star Citizen
+Exec=starpanel
+Icon=starpanel
+Terminal=false
+Categories=Game;Utility;
+Keywords=star;citizen;space;trading;ships;starpanel;
+StartupWMClass=StarPanel

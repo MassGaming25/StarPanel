@@ -1,26 +1,14 @@
-"""
-User-defined ship status overrides.
-Saved to XDG_DATA_HOME/starpanel/status_overrides.json.
-Takes priority over all API sources.
-"""
+"""User-defined ship status overrides."""
 
 import json
-import os
-from pathlib import Path
+from core.storage import data_file
 
 
-def _path() -> Path:
-    data_home = os.environ.get(
-        "XDG_DATA_HOME",
-        os.path.join(os.path.expanduser("~"), ".local", "share")
-    )
-    p = Path(data_home) / "starpanel"
-    p.mkdir(parents=True, exist_ok=True)
-    return p / "status_overrides.json"
+def _path():
+    return data_file("status_overrides.json")
 
 
 def load_overrides() -> dict:
-    """Return {ship_name_lowercase: status_string}."""
     p = _path()
     if p.exists():
         try:
@@ -45,7 +33,6 @@ def remove_override(ship_name: str):
 
 
 def apply_overrides(ships: list) -> list:
-    """Apply saved user overrides to a ship list. Returns the list."""
     overrides = load_overrides()
     if not overrides:
         return ships

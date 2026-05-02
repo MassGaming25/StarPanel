@@ -1,4 +1,4 @@
-"""SC Companion colour palette and stylesheet."""
+"""StarPanel colour palette and stylesheet."""
 
 DARK_PALETTE = """
 QMainWindow, QWidget {

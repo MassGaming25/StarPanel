@@ -1,13 +1,9 @@
-"""
-Captain's Log persistence.
-Saved to XDG_DATA_HOME/starpanel/captains_log.json
-"""
+"""Captain's Log persistence."""
 
 import json
-import os
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
+from core.storage import data_file
 
 ENTRY_TYPES = [
     "Combat / Battle Report",
@@ -32,14 +28,8 @@ ENTRY_COLORS = {
 }
 
 
-def _path() -> Path:
-    data_home = os.environ.get(
-        "XDG_DATA_HOME",
-        os.path.join(os.path.expanduser("~"), ".local", "share")
-    )
-    p = Path(data_home) / "starpanel"
-    p.mkdir(parents=True, exist_ok=True)
-    return p / "captains_log.json"
+def _path():
+    return data_file("captains_log.json")
 
 
 def load_log() -> list:
@@ -60,7 +50,7 @@ def add_entry(entry: dict) -> dict:
     entries = load_log()
     entry["id"]        = str(uuid.uuid4())[:8]
     entry["timestamp"] = datetime.now(timezone.utc).isoformat()
-    entries.insert(0, entry)   # newest first
+    entries.insert(0, entry)
     _save(entries)
     return entry
 
@@ -70,7 +60,7 @@ def update_entry(entry_id: str, entry: dict) -> bool:
     for i, e in enumerate(entries):
         if e.get("id") == entry_id:
             entry["id"]        = entry_id
-            entry["timestamp"] = e["timestamp"]   # preserve original time
+            entry["timestamp"] = e["timestamp"]
             entry["edited"]    = datetime.now(timezone.utc).isoformat()
             entries[i] = entry
             _save(entries)

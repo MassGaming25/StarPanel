@@ -2,9 +2,11 @@
 Star Citizen version tracker.
 
 Sources:
-  Live version  — UEX home page header (reliable, fast)
-  PTU/EPTU      — RSI Spectrum PTU patch notes RSS feed
-                  (official CIG posts containing exact version strings)
+  PTU STATUS / LIVE STATUS — RSI Knowledge Base PTU FAQ page
+  (contains "PTU STATUS: X.Y" and "LIVE STATUS: X.Y" at the top,
+   maintained directly by CIG)
+
+  Fallback for Live — UEX home page header
 """
 
 import re
@@ -12,18 +14,31 @@ import urllib.request
 import urllib.error
 from PyQt6.QtCore import QThread, pyqtSignal
 
-UEX_HOME_URL     = "https://uexcorp.space/"
-RSI_PTU_RSS_URL  = "https://robertsspaceindustries.com/spectrum/community/SC/forum/190048.rss"
-TIMEOUT = 8
+RSI_PTU_FAQ_URL = (
+    "https://support.robertsspaceindustries.com/hc/en-us/articles/"
+    "115013195927-Public-Test-Universe-PTU-FAQ"
+)
+RSI_PTU_INSTALL_URL = (
+    "https://support.robertsspaceindustries.com/hc/en-us/articles/"
+    "360000668488-Install-the-Star-Citizen-PTU"
+)
+UEX_HOME_URL = "https://uexcorp.space/"
+TIMEOUT = 10
 
 
 def _get_text(url: str) -> tuple[str, str]:
     try:
         req = urllib.request.Request(
-            url, headers={
-                "User-Agent": "StarPanel/1.0",
-                "Accept": "text/html,application/xhtml+xml,application/xml,*/*"
-            })
+            url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                ),
+                "Accept": "text/html,application/xhtml+xml,*/*",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
+        )
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             return resp.read().decode("utf-8", errors="replace"), ""
     except urllib.error.HTTPError as e:
@@ -44,61 +59,64 @@ class SCVersionChecker(QThread):
     def run(self):
         result = {"live": "", "ptu": "", "eptu": "", "tech_preview": ""}
 
-        # ── Live version from UEX header ───────────────────────────
-        # UEX displays "Star Citizen X.Y.Z" in their page header
-        text, err = _get_text(UEX_HOME_URL)
-        if not err and text:
-            ver = _extract(text, r'Star\s+Citizen\s+([\d]+\.[\d]+(?:\.[\d]+)?)')
-            if ver:
-                result["live"] = ver
-                print(f"[SCVersion] Live from UEX header: {ver}")
-        else:
-            print(f"[SCVersion] UEX failed: {err}")
+        # ── Source 1: RSI PTU FAQ page ─────────────────────────────
+        # Page header always contains:
+        #   "PTU STATUS: 4.8 - Wave 1"
+        #   "LIVE STATUS: 4.7"
+        for url in [RSI_PTU_FAQ_URL, RSI_PTU_INSTALL_URL]:
+            text, err = _get_text(url)
+            if err:
+                print(f"[SCVersion] {url} failed: {err}")
+                continue
 
-        # ── PTU / EPTU from RSI Spectrum RSS ───────────────────────
-        # CIG posts patch notes to Spectrum. The RSS feed titles contain
-        # exact strings like "4.8.0-PTU.11759767" and "4.8.0-EPTU.XXXXXXX"
-        # Evocati posts say "Evocati" in the title and have EPTU build strings
-        text, err = _get_text(RSI_PTU_RSS_URL)
-        if not err and text:
-            print(f"[SCVersion] RSS feed fetched ({len(text)} chars)")
+            print(f"[SCVersion] RSI page fetched ({len(text)} chars)")
 
-            # Find all version strings in the feed
-            # Pattern: X.Y.Z-PTU.NNNNNNN  or  X.Y.Z-EPTU.NNNNNNN
-            ptu_matches  = re.findall(
-                r'([\d]+\.[\d]+\.[\d]+-PTU\.[\d]+)', text, re.IGNORECASE)
-            eptu_matches = re.findall(
-                r'([\d]+\.[\d]+\.[\d]+-(?:EPTU|PTU)\.[\d]+).*?[Ee]vocati', text)
+            # Extract PTU status — e.g. "4.8 - Wave 1" or "4.8.0" or "Inactive"
+            ptu_raw = _extract(
+                text,
+                r'PTU\s+STATUS\s*:\s*([^\n<]{1,30}?)(?:\s+LIVE|\s*[\n<]|$)'
+            )
+            live_raw = _extract(
+                text,
+                r'LIVE\s+STATUS\s*:\s*([\d]+\.[\d]+(?:\.[\d]+)?)'
+            )
 
-            # Also look for Evocati posts — their titles mention Evocati
-            # and contain PTU build strings (CIG uses -PTU. even for Evocati)
-            evocati_section = re.findall(
-                r'[Ee]vocati[^\n<]{0,200}([\d]+\.[\d]+\.[\d]+-(?:EPTU|PTU)\.[\d]+)',
-                text)
+            print(f"[SCVersion] raw PTU='{ptu_raw}'  LIVE='{live_raw}'")
 
-            if evocati_section:
-                result["eptu"] = evocati_section[0]
-                print(f"[SCVersion] EPTU/Evocati: {result['eptu']}")
+            if live_raw:
+                # Extract just the version number e.g. "4.7" from "4.7" or "4.7.2"
+                live_ver = _extract(live_raw, r'([\d]+\.[\d]+(?:\.[\d]+)?)')
+                result["live"] = live_ver or live_raw.strip()
 
-            if ptu_matches:
-                # Latest PTU build is the first match (RSS is newest-first)
-                latest_ptu = ptu_matches[0]
-                # Only set as PTU if not already identified as Evocati
-                if latest_ptu != result.get("eptu"):
-                    result["ptu"] = latest_ptu
-                    print(f"[SCVersion] PTU: {result['ptu']}")
+            if ptu_raw:
+                ptu_lower = ptu_raw.lower()
+                if "inactive" in ptu_lower or "closed" in ptu_lower or "n/a" in ptu_lower:
+                    result["ptu"] = ""
+                    print("[SCVersion] PTU is inactive")
+                else:
+                    ptu_ver = _extract(ptu_raw, r'([\d]+\.[\d]+(?:\.[\d]+)?)')
+                    # Wave info: grab only "Wave N" or "All Waves" — stop at space+uppercase or end
+                    wave = _extract(ptu_raw, r'[-–]\s*((?:All\s+Waves?|Wave\s+\d+|Evocati))')
+                    if ptu_ver:
+                        result["ptu"] = f"{ptu_ver}  {wave}".strip() if wave else ptu_ver
+                    if "evocati" in ptu_lower:
+                        result["eptu"] = result["ptu"]
+                        result["ptu"]  = ""
 
-            # If only one type found and it mentions Evocati, mark accordingly
-            if result["ptu"] and not result["eptu"]:
-                # Check if the PTU entries are all Evocati audience
-                if re.search(r'[Ee]vocati', text[:2000]):
-                    result["eptu"] = result["ptu"]
-                    result["ptu"]  = ""
-                    print(f"[SCVersion] Reclassified as Evocati: {result['eptu']}")
-        else:
-            print(f"[SCVersion] RSS failed: {err}")
+            if any(result.values()):
+                break  # got what we need
 
-        # Emit whatever we have — even partial is useful
+        # ── Fallback for Live: UEX header ──────────────────────────
+        if not result["live"]:
+            text, err = _get_text(UEX_HOME_URL)
+            if not err and text:
+                ver = _extract(text, r'Star\s+Citizen\s+([\d]+\.[\d]+(?:\.[\d]+)?)')
+                if ver:
+                    result["live"] = ver
+                    print(f"[SCVersion] Live fallback from UEX: {ver}")
+
+        print(f"[SCVersion] Final: {result}")
+
         if any(result.values()):
             self.versions_ready.emit(result)
         else:

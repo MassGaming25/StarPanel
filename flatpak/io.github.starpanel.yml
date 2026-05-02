@@ -1,0 +1,51 @@
+app-id: io.github.starpanel
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: starpanel
+
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --filesystem=xdg-data/starpanel:create
+
+modules:
+  - name: starpanel
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 starpanel.sh /app/bin/starpanel
+      - install -d /app/share/starpanel/src/ui
+      - install -d /app/share/starpanel/src/core
+      - install -Dm644 src/main.py                  /app/share/starpanel/src/main.py
+      - install -Dm644 src/starpanel.png             /app/share/starpanel/src/starpanel.png
+      - install -Dm644 src/ui/__init__.py             /app/share/starpanel/src/ui/__init__.py
+      - install -Dm644 src/ui/theme.py               /app/share/starpanel/src/ui/theme.py
+      - install -Dm644 src/ui/mainwindow.py           /app/share/starpanel/src/ui/mainwindow.py
+      - install -Dm644 src/ui/overview_tab.py        /app/share/starpanel/src/ui/overview_tab.py
+      - install -Dm644 src/ui/ships_tab.py           /app/share/starpanel/src/ui/ships_tab.py
+      - install -Dm644 src/ui/commodities_tab.py     /app/share/starpanel/src/ui/commodities_tab.py
+      - install -Dm644 src/ui/fleet_tab.py           /app/share/starpanel/src/ui/fleet_tab.py
+      - install -Dm644 src/ui/log_tab.py             /app/share/starpanel/src/ui/log_tab.py
+      - install -Dm644 src/ui/update_dialog.py       /app/share/starpanel/src/ui/update_dialog.py
+      - install -Dm644 src/ui/widgets.py             /app/share/starpanel/src/ui/widgets.py
+      - install -Dm644 src/core/__init__.py           /app/share/starpanel/src/core/__init__.py
+      - install -Dm644 src/core/data.py              /app/share/starpanel/src/core/data.py
+      - install -Dm644 src/core/fleet.py             /app/share/starpanel/src/core/fleet.py
+      - install -Dm644 src/core/uex.py               /app/share/starpanel/src/core/uex.py
+      - install -Dm644 src/core/storage.py           /app/share/starpanel/src/core/storage.py
+      - install -Dm644 src/core/overrides.py         /app/share/starpanel/src/core/overrides.py
+      - install -Dm644 src/core/captains_log.py      /app/share/starpanel/src/core/captains_log.py
+      - install -Dm644 src/core/sc_version.py        /app/share/starpanel/src/core/sc_version.py
+      - install -Dm644 src/core/updater.py           /app/share/starpanel/src/core/updater.py
+      - install -Dm644 src/core/version.py           /app/share/starpanel/src/core/version.py
+      - install -Dm644 src/core/image_cache.py       /app/share/starpanel/src/core/image_cache.py
+      - install -Dm644 io.github.starpanel.desktop   /app/share/applications/io.github.starpanel.desktop
+      - install -Dm644 io.github.starpanel.metainfo.xml /app/share/metainfo/io.github.starpanel.metainfo.xml
+      - install -Dm644 assets/starpanel_256.png      /app/share/icons/hicolor/256x256/apps/starpanel.png
+      - install -Dm644 assets/starpanel_128.png      /app/share/icons/hicolor/128x128/apps/starpanel.png
+      - install -Dm644 assets/starpanel_64.png       /app/share/icons/hicolor/64x64/apps/starpanel.png
+    sources:
+      - type: dir
+        path: ..

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.starpanel</id>
+  <name>StarPanel</name>
+  <summary>Star Citizen companion dashboard</summary>
+  <description>
+    <p>
+      A native Linux desktop companion app for Star Citizen.
+      Track your fleet, browse ship loadouts, find the best commodity
+      trade routes, and keep a Captain's Log.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.starpanel.desktop</launchable>
+  <url type="homepage">https://github.com/MassGaming25/StarPanel</url>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <content_rating type="oars-1.1"/>
+</component>
